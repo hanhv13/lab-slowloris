@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  victim-server:
+    image: httpd:2.4
+    container_name: victim-server
+    ports:
+      - "8080:80"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  attacker:
+    image: python:3.10-slim
+    container_name: slowloris-attacker
+    volumes:
+      - .:/app
+    working_dir: /app
+    depends_on:
+      - victim-server
+    # Chạy lệnh tấn công vào cổng 80 của victim-server
+    command: python slowloris.py victim-server -p 80 -s 200 -v
