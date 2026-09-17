@@ -1,24 +1,46 @@
 version: '3.8'
 
 services:
-  victim-server:
+  # 1. Profile event
+  victim-event:
     image: httpd:2.4
     container_name: victim-server
+    profiles: ["event"]
     ports:
       - "8080:80"
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
+    volumes:
+      - ./configs/mpm_event.conf:/usr/local/apache2/conf/extra/httpd-mpm.conf:ro
+      - ./my-httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
 
+  # 2. Profile worker
+  victim-worker:
+    image: httpd:2.4
+    container_name: victim-server
+    profiles: ["worker"]
+    ports:
+      - "8080:80"
+    volumes:
+      - ./configs/mpm_worker.conf:/usr/local/apache2/conf/extra/httpd-mpm.conf:ro
+      - ./my-httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+
+  # 3. Profile prefork
+  victim-prefork:
+    image: httpd:2.4
+    container_name: victim-server
+    profiles: ["prefork"]
+    ports:
+      - "8080:80"
+    volumes:
+      - ./configs/mpm_prefork.conf:/usr/local/apache2/conf/extra/httpd-mpm.conf:ro
+      - ./my-httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+
+  # Attacker container
   attacker:
     image: python:3.10-slim
     container_name: slowloris-attacker
     volumes:
       - .:/app
     working_dir: /app
-    depends_on:
-      - victim-server
-    # Chạy lệnh tấn công vào cổng 80 của victim-server
-    command: python slowloris.py victim-server -p 80 -s 200 -v
+    command: python slowloris.py victim-server -p 80 -s33 -v
+
+# E.g: docker compose --profile event up -d
